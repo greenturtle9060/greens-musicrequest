@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Request Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000; /* Dark mode */
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #222;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="button"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #333;
+            color: white;
+        }
+        input[type="button"] {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        input[type="button"]:hover {
+            background-color: #218838;
+        }
+        .message, .countdown {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .warning {
+            background-color: #ffcc00; /* Yellow background for warning */
+            color: black; /* Black text for warning */
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Music Request Form</h1>
+
+    <form id="musicRequestForm">
+        <label for="songName">Name of Song:</label>
+        <input type="text" id="songName" name="songName" required>
+
+        <label for="songLink">Optional: Link to Song:</label>
+        <input type="text" id="songLink" name="songLink" placeholder="http://example.com">
+
+        <label for="artist">Artist/s:</label>
+        <input type="text" id="artist" name="artist" required>
+
+        <label for="email">Your Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <input type="button" value="Send Request" onclick="sendRequest()">
+    </form>
+    <div class="countdown" id="countdown"></div>
+    <div class="message" id="responseMessage"></div>
+    
+    <div class="warning">
+        ⚠️ **Warning:** Submitting a prank email will result in your request being ignored.
+    </div>
+</div>
+
+<script>
+    let canSendRequest = true;
+    const countdownTime = 5;
+
+    function getRandomColor() {
+        return Math.floor(Math.random() * 16777215);
+    }
+
+    function isValidURL(url) {
+        const regex = /^(ftp|http|https):\/\/[^ "]+$/;
+        return regex.test(url);
+    }
+
+    function startCountdown() {
+        let timeLeft = countdownTime;
+        const countdownDisplay = document.getElementById('countdown');
+        countdownDisplay.innerText = `You can send another request in ${timeLeft} seconds.`;
+
+        const countdownInterval = setInterval(() => {
+            timeLeft--;
+            countdownDisplay.innerText = `You can send another request in ${timeLeft} seconds.`;
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                countdownDisplay.innerText = '';
+                canSendRequest = true;
+            }
+        }, 1000);
+    }
+
+    function sendRequest() {
+        if (!canSendRequest) {
+            document.getElementById('responseMessage').innerText = 'Please wait before sending another request.';
+            return;
+        }
+
+        const songName = document.getElementById('songName').value;
+        const songLink = document.getElementById('songLink').value;
+        const artist = document.getElementById('artist').value;
+        const email = document.getElementById('email').value;
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            document.getElementById('responseMessage').innerText = 'Please enter a valid email address.';
+            return;
+        }
+
+        if (songLink && !isValidURL(songLink)) {
+            document.getElementById('responseMessage').innerText = 'Please enter a valid URL for the song link.';
+            return;
+        }
+
+        const webhookURL = 'https://discord.com/api/webhooks/1302122124814843966/5XetdZOxRUiVyoHL5cwd0eyUtyLuGgpAhc67WTOy3TbCgOC5zgl4hMN5pPGXSVWQzVen';
+
+        const timestamp = new Date().toISOString();
+
+        const payload = {
+            embeds: [{
+                title: "New Music Request",
+                description: `**Song Name:** ${songName}\n**Song Link:** ${songLink ? songLink : 'N/A'}\n**Artist:** ${artist}\n**Email:** ${email}`,
+                color: getRandomColor(),
+                timestamp: timestamp,
+                footer: {
+                    text: "Music Request System"
+                }
+            }]
+        };
+
+        fetch(webhookURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (response.ok) {
+                document.getElementById('responseMessage').innerText = 'Request sent successfully!';
+                document.getElementById('musicRequestForm').reset();
+                canSendRequest = false;
+                startCountdown();
+            } else {
+                return response.text().then(text => {
+                    throw new Error(text);
+                });
+            }
+        })
+        .catch(error => {
+            document.getElementById('responseMessage').innerText = `Error sending request: ${error.message}`;
+        });
+    }
+</script>
+
+</body>
+</html>
